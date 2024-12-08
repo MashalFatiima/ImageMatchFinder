@@ -87,7 +87,7 @@ def main():
 
     # Step 1: Read the pre-uploaded CSV file
     st.subheader("Step 1: Reading Pre-uploaded CSV File")
-    csv_path = "Data ID - Sheet1.csv"
+    csv_path = "DataSheet.csv"
     if not os.path.exists(csv_path):
         st.error("CSV file not found!")
         return
@@ -103,7 +103,7 @@ def main():
     if len(os.listdir(output_dir)) == 0:  # Only download if the folder is empty
         st.write("Downloading images...")
         for _, row in df.iterrows():
-            image_url = row['image_link']
+            image_url = row['Image Link']
             response = requests.get(image_url, stream=True)
             if response.status_code == 200:
                 output_path = os.path.join(output_dir, f"{row['Product ID']}.jpg")
