@@ -1,7 +1,6 @@
-tensorflow
-numpy
-pandas
-requests
-Pillow
-scikit-learn
 streamlit
+tensorflow
+pandas
+numpy
+scikit-learn
+requests
