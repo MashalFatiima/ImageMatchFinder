@@ -22,7 +22,7 @@ def download_images(csv_file):
     st.info("Downloading images from the dataset...")
     df = pd.read_csv(csv_file)
     for _, row in df.iterrows():
-        image_url = row["image_link"]
+        image_url = row["Image Link"]
         image_id = row["Product ID"]
         response = requests.get(image_url, stream=True)
         if response.status_code == 200:
