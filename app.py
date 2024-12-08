@@ -22,7 +22,7 @@ def download_images(csv_file):
     st.info("Downloading images from the dataset...")
     df = pd.read_csv(csv_file)
     for _, row in df.iterrows():
-        image_url = row["Image Link"]
+        image_url = row["image_link"]
         image_id = row["Product ID"]
         response = requests.get(image_url, stream=True)
         if response.status_code == 200:
@@ -82,32 +82,32 @@ if uploaded_image is not None:
     image_paths_path = os.path.join(feature_dir, "image_paths_all.npy")
 
     if not os.path.exists(features_list_path) or not os.path.exists(image_paths_path):
-        st.info("Extracting features for the dataset...")
-        features_list = []
-        image_paths = []
-        for image_name in os.listdir(image_dir):
-            if image_name.endswith(('.jpg', '.png')) and image_name != "query_image.jpg":
-                image_path = os.path.join(image_dir, image_name)
-                feature_vector = extract_features(image_path, model)
-                np.save(os.path.join(feature_dir, f"{image_name}.npy"), feature_vector)
-                features_list.append(feature_vector)
-                image_paths.append(image_path)
-        np.save(features_list_path, features_list)
-        np.save(image_paths_path, image_paths)
+        with st.spinner("Extracting features for the dataset..."):
+            features_list = []
+            image_paths = []
+            for image_name in os.listdir(image_dir):
+                if image_name.endswith(('.jpg', '.png')) and image_name != "query_image.jpg":
+                    image_path = os.path.join(image_dir, image_name)
+                    feature_vector = extract_features(image_path, model)
+                    np.save(os.path.join(feature_dir, f"{image_name}.npy"), feature_vector)
+                    features_list.append(feature_vector)
+                    image_paths.append(image_path)
+            np.save(features_list_path, features_list)
+            np.save(image_paths_path, image_paths)
         st.success("Feature extraction completed!")
     else:
         features_list = np.load(features_list_path, allow_pickle=True)
         image_paths = np.load(image_paths_path, allow_pickle=True)
 
     # Find top 5 similar images
-    st.info("Finding similar images...")
-    top_similar_images = find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5)
+    with st.spinner("Finding similar images..."):
+        top_similar_images = find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5)
+    st.success("Top 5 similar images found!")
 
     # Display results
-    st.success("Top 5 similar images found!")
-    st.write("### Similar Images:")
-    for idx, (similar_image_path, score) in enumerate(top_similar_images):
-        st.image(similar_image_path, caption=f"Rank {idx+1}: Similarity {score:.4f}", use_column_width=True)
-
-    # Clear results if a new image is uploaded
-    st.warning("Upload a new query image to reset and find different results.")
+    if top_similar_images:
+        st.write("### Similar Images:")
+        for idx, (similar_image_path, score) in enumerate(top_similar_images):
+            st.image(similar_image_path, caption=f"Rank {idx+1}: Similarity {score:.4f}", use_column_width=True)
+    else:
+        st.warning("No similar images found. Make sure your dataset contains valid images.")
