@@ -8,16 +8,13 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 
-# Load the pre-trained VGG-16 model
 model = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 
-# Directories for images and features
 image_dir = "downloaded_images"
 feature_dir = "features"
 os.makedirs(image_dir, exist_ok=True)
 os.makedirs(feature_dir, exist_ok=True)
 
-# Function to download images from a CSV file
 def download_images(csv_file):
     st.info("Downloading images from the dataset...")
     df = pd.read_csv(csv_file)
@@ -31,7 +28,6 @@ def download_images(csv_file):
                 file.write(response.content)
     st.success(f"All images downloaded successfully to {image_dir}!")
 
-# Function to extract features from an image
 def extract_features(image_path, model):
     img = load_img(image_path, target_size=(224, 224))
     img_array = img_to_array(img)
@@ -40,7 +36,6 @@ def extract_features(image_path, model):
     features = model.predict(img_array)
     return features.flatten()
 
-# Function to compute similarity and find top matches
 def find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5):
     query_vector = extract_features(query_image_path, model)
     similarities = []
@@ -49,7 +44,6 @@ def find_top_similar_images(query_image_path, model, features_list, image_paths,
         similarities.append((image_paths[i], sim_score))
     return sorted(similarities, key=lambda x: x[1], reverse=True)[:top_n]
 
-# Streamlit App
 st.title("🖼️ Image Similarity Finder")
 st.markdown(
     """
@@ -59,25 +53,20 @@ st.markdown(
     """
 )
 
-# Query image uploader
 uploaded_image = st.file_uploader("Upload a query image to find similar images", type=["jpg", "png"])
 
 if uploaded_image is not None:
-    # Save the query image
     query_image_path = os.path.join(image_dir, "query_image.jpg")
     with open(query_image_path, "wb") as f:
         f.write(uploaded_image.getbuffer())
 
-    # Display the query image
     st.image(query_image_path, caption="Query Image", use_column_width=True)
 
-    # Check if dataset images exist, else download them from the CSV file
     if not os.listdir(image_dir):
         csv_path = st.text_input("Enter the path to your CSV file with image links:")
         if csv_path:
             download_images(csv_path)
 
-    # Load or compute features for dataset images
     features_list_path = os.path.join(feature_dir, "features_list_all.npy")
     image_paths_path = os.path.join(feature_dir, "image_paths_all.npy")
 
@@ -99,15 +88,12 @@ if uploaded_image is not None:
         features_list = np.load(features_list_path, allow_pickle=True)
         image_paths = np.load(image_paths_path, allow_pickle=True)
 
-    # Find top 5 similar images
     st.info("Finding similar images...")
     top_similar_images = find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5)
 
-    # Display results
     st.success("Top 5 similar images found!")
     st.write("### Similar Images:")
     for idx, (similar_image_path, score) in enumerate(top_similar_images):
         st.image(similar_image_path, caption=f"Rank {idx+1}: Similarity {score:.4f}", use_column_width=True)
 
-    # Clear results if a new image is uploaded
     st.warning("Upload a new query image to reset and find different results.")
