@@ -58,14 +58,14 @@ def main():
             .main { background-color: #f0f0f5; }
             .header { text-align: center; margin-bottom: 20px; }
             .logo { width: 80px; height: 80px; margin-right: 20px; }
-            .footer { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #FF69B4; font-weight: bold; }
+            .footer { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #FF69B4; font-weight: bold; background-color: #3498db; padding: 10px; width: 100%; text-align: center; }
             .uploaded-image { width: 200px; height: auto; margin-bottom: 10px; }
         </style>
     """, unsafe_allow_html=True)
 
     col1, col2 = st.columns([1, 6])
     with col1:
-        st.image("Logo.webp", width=80)  
+        st.image("Logo.webp", width=80) 
     with col2:
         st.title("Image Match Finder")
     
@@ -82,7 +82,7 @@ def main():
     output_dir = "downloaded_images"
     os.makedirs(output_dir, exist_ok=True)
     
-    if len(os.listdir(output_dir)) == 0:  
+    if len(os.listdir(output_dir)) == 0: 
         st.write("Downloading images...")
         for _, row in df.iterrows():
             image_url = row['Image Link']
