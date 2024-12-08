@@ -12,12 +12,12 @@ import streamlit as st
 model = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 
 # Directories for images and features
-image_dir = "images"
-feature_dir = "features"
+image_dir = "images"  # Image folder
+feature_dir = "features"  # Folder for storing features
 os.makedirs(image_dir, exist_ok=True)
 os.makedirs(feature_dir, exist_ok=True)
 
-# Function to download images from a CSV file
+# Function to download images from the CSV file
 def download_images(csv_file):
     st.info("Downloading images from the dataset...")
     df = pd.read_csv(csv_file)
@@ -31,7 +31,7 @@ def download_images(csv_file):
                 file.write(response.content)
     st.success(f"All images downloaded successfully to {image_dir}!")
 
-# Function to extract features from an image
+# Function to extract features from an image using VGG16
 def extract_features(image_path, model):
     img = load_img(image_path, target_size=(224, 224))
     img_array = img_to_array(img)
@@ -40,21 +40,23 @@ def extract_features(image_path, model):
     features = model.predict(img_array)
     return features.flatten()
 
-# Function to compute similarity and find top matches
+# Function to find the top 5 most similar images based on cosine similarity
 def find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5):
     query_vector = extract_features(query_image_path, model)
     similarities = []
     for i, stored_vector in enumerate(features_list):
         sim_score = cosine_similarity([query_vector], [stored_vector])[0][0]
         similarities.append((image_paths[i], sim_score))
+    
+    # Sort based on the similarity score in descending order and return top_n
     return sorted(similarities, key=lambda x: x[1], reverse=True)[:top_n]
 
-# Streamlit App
+# Streamlit App UI
 st.title("🖼️ Image Similarity Finder")
 st.markdown(
     """
     **Step 1:** Upload a query image to start.  
-    **Step 2:** The app will download dataset images, process them, and calculate similarity scores.  
+    **Step 2:** The app will automatically download images from the provided dataset CSV and process them for similarity matching.  
     **Step 3:** View the top 5 similar images based on cosine similarity.
     """
 )
@@ -89,6 +91,7 @@ if uploaded_image is not None:
             if image_name.endswith(('.jpg', '.png')) and image_name != "query_image.jpg":
                 image_path = os.path.join(image_dir, image_name)
                 feature_vector = extract_features(image_path, model)
+                np.save(os.path.join(feature_dir, f"{image_name}.npy"), feature_vector)
                 features_list.append(feature_vector)
                 image_paths.append(image_path)
         np.save(features_list_path, features_list)
@@ -98,15 +101,15 @@ if uploaded_image is not None:
         features_list = np.load(features_list_path, allow_pickle=True)
         image_paths = np.load(image_paths_path, allow_pickle=True)
 
-    # Find top 5 similar images
+    # Find top 5 similar images based on cosine similarity
     st.info("Finding similar images...")
     top_similar_images = find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5)
 
-    # Display results
-    if top_similar_images:
-        st.success("Top 5 similar images found!")
-        st.write("### Similar Images:")
-        for idx, (similar_image_path, score) in enumerate(top_similar_images):
-            st.image(similar_image_path, caption=f"Rank {idx+1}: Similarity {score:.4f}", use_column_width=True)
-    else:
-        st.error("No similar images found. Make sure your dataset contains valid images.")
+    # Display the top 5 similar images
+    st.success("Top 5 similar images found!")
+    st.write("### Top 5 Similar Images:")
+
+    for idx, (similar_image_path, score) in enumerate(top_similar_images):
+        st.image(similar_image_path, caption=f"Rank {idx + 1}: Similarity {score:.4f}", use_column_width=True)
+
+    st.warning("Upload a new query image to reset and find different results.")
