@@ -11,12 +11,13 @@ import streamlit as st
 # Load the pre-trained VGG-16 model
 model = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 
-# Directories
+# Directories for images and features
 image_dir = "downloaded_images"
 feature_dir = "features"
 os.makedirs(image_dir, exist_ok=True)
 os.makedirs(feature_dir, exist_ok=True)
 
+# Function to download images
 def download_images(csv_file):
     st.info("Downloading images...")
     df = pd.read_csv(csv_file)
@@ -34,6 +35,7 @@ def download_images(csv_file):
             print(f"Error downloading {image_url}: {e}")
     st.success("Images downloaded successfully!")
 
+# Function to extract features
 def extract_features(image_path, model):
     try:
         img = load_img(image_path, target_size=(224, 224))
@@ -44,9 +46,10 @@ def extract_features(image_path, model):
         print(f"Extracted features for: {image_path}")
         return features.flatten()
     except Exception as e:
-        print(f"Error extracting features from {image_path}: {e}")
+        print(f"Error extracting features for {image_path}: {e}")
         return None
 
+# Function to find top similar images
 def find_top_similar_images(query_image_path, model, features_list, image_paths, top_n=5):
     query_vector = extract_features(query_image_path, model)
     if query_vector is None:
@@ -62,6 +65,7 @@ st.title("🖼️ Image Similarity Finder")
 
 uploaded_image = st.file_uploader("Upload a query image", type=["jpg", "png"])
 if uploaded_image is not None:
+    # Save query image
     query_image_path = os.path.join(image_dir, "query_image.jpg")
     with open(query_image_path, "wb") as f:
         f.write(uploaded_image.getbuffer())
@@ -102,6 +106,7 @@ if uploaded_image is not None:
     if top_similar_images:
         st.success("Top 5 similar images found!")
         for idx, (similar_image_path, score) in enumerate(top_similar_images):
+            print(f"Rank {idx+1}: {similar_image_path}, Similarity Score: {score}")
             st.image(similar_image_path, caption=f"Rank {idx+1}: Similarity {score:.4f}")
     else:
         st.error("No similar images found. Make sure your dataset contains valid images.")
