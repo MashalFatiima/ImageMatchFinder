@@ -70,7 +70,7 @@ def main():
             .main { background-color: #f0f0f5; }
             .header { text-align: center; margin-bottom: 20px; }
             .logo { width: 80px; height: 80px; margin-right: 20px; }
-            .developer-info { font-size: 14px; color: #3498db; font-weight: bold; margin-top: 10px; }
+            .developer-info { font-size: 14px; color: #FFC0CB; font-weight: bold; margin-top: 10px; }
             .uploaded-image { width: 200px; height: auto; margin-bottom: 10px; }
         </style>
     """, unsafe_allow_html=True)
