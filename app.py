@@ -1,7 +1,6 @@
 import os
-import requests
+import zipfile
 import numpy as np
-import pandas as pd
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -9,27 +8,19 @@ from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 
 # Load the pre-trained VGG-16 model
-model = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
+model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
 # Directories for images and features
-image_dir = "downloaded_images"
+image_dir = "extracted_images"
 feature_dir = "features"
 os.makedirs(image_dir, exist_ok=True)
 os.makedirs(feature_dir, exist_ok=True)
 
-# Function to download images from a CSV file
-def download_images(csv_file):
-    st.info("Downloading images from the dataset...")
-    df = pd.read_csv(csv_file)
-    for _, row in df.iterrows():
-        image_url = row["image_link"]
-        image_id = row["Product ID"]
-        response = requests.get(image_url, stream=True)
-        if response.status_code == 200:
-            output_path = os.path.join(image_dir, f"{image_id}.jpg")
-            with open(output_path, "wb") as file:
-                file.write(response.content)
-    st.success(f"All images downloaded successfully to {image_dir}!")
+# Function to extract ZIP file
+def extract_images(zip_file):
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        zip_ref.extractall(image_dir)
+    st.success("Images extracted successfully!")
 
 # Function to extract features from an image
 def extract_features(image_path, model):
@@ -53,14 +44,41 @@ def find_top_similar_images(query_image_path, model, features_list, image_paths,
 st.title("🖼️ Image Similarity Finder")
 st.markdown(
     """
-    **Step 1:** Upload a query image to start.  
-    **Step 2:** The app will automatically download images from the provided dataset CSV and process them for similarity matching.  
-    **Step 3:** View the top 5 similar images based on cosine similarity.
+    **Step 1:** Upload a ZIP file containing your dataset images (only the first time).  
+    **Step 2:** Upload your query image to find the top 5 similar images from the dataset.
     """
 )
 
-# Query image uploader
-uploaded_image = st.file_uploader("Upload a query image to find similar images", type=["jpg", "png"])
+# Step 1: ZIP file uploader
+if not os.listdir(image_dir):
+    st.subheader("Step 1: Upload your dataset")
+    uploaded_zip = st.file_uploader("Upload a ZIP file containing images", type=["zip"])
+    if uploaded_zip is not None:
+        st.info("Extracting images...")
+        extract_images(uploaded_zip)
+
+        # Extract features for the dataset
+        st.info("Extracting features from the dataset...")
+        features_list = []
+        image_paths = []
+        for image_name in os.listdir(image_dir):
+            if image_name.endswith(('.jpg', '.png')):
+                image_path = os.path.join(image_dir, image_name)
+                feature_vector = extract_features(image_path, model)
+                np.save(os.path.join(feature_dir, f"{image_name}.npy"), feature_vector)
+                features_list.append(feature_vector)
+                image_paths.append(image_path)
+        np.save(os.path.join(feature_dir, "features_list_all.npy"), features_list)
+        np.save(os.path.join(feature_dir, "image_paths_all.npy"), image_paths)
+        st.success("Dataset processed successfully!")
+else:
+    # Load preprocessed features and image paths
+    features_list = np.load(os.path.join(feature_dir, "features_list_all.npy"), allow_pickle=True)
+    image_paths = np.load(os.path.join(feature_dir, "image_paths_all.npy"), allow_pickle=True)
+
+# Step 2: Query image uploader
+st.subheader("Step 2: Upload a Query Image")
+uploaded_image = st.file_uploader("Upload a query image", type=["jpg", "png"])
 
 if uploaded_image is not None:
     # Save the query image
@@ -70,34 +88,6 @@ if uploaded_image is not None:
 
     # Display the query image
     st.image(query_image_path, caption="Query Image", use_column_width=True)
-
-    # Check if dataset images exist, else download them from the CSV file
-    if not os.listdir(image_dir):
-        csv_path = st.text_input("Enter the path to your CSV file with image links:")
-        if csv_path:
-            download_images(csv_path)
-
-    # Load or compute features for dataset images
-    features_list_path = os.path.join(feature_dir, "features_list_all.npy")
-    image_paths_path = os.path.join(feature_dir, "image_paths_all.npy")
-
-    if not os.path.exists(features_list_path) or not os.path.exists(image_paths_path):
-        st.info("Extracting features for the dataset...")
-        features_list = []
-        image_paths = []
-        for image_name in os.listdir(image_dir):
-            if image_name.endswith(('.jpg', '.png')) and image_name != "query_image.jpg":
-                image_path = os.path.join(image_dir, image_name)
-                feature_vector = extract_features(image_path, model)
-                np.save(os.path.join(feature_dir, f"{image_name}.npy"), feature_vector)
-                features_list.append(feature_vector)
-                image_paths.append(image_path)
-        np.save(features_list_path, features_list)
-        np.save(image_paths_path, image_paths)
-        st.success("Feature extraction completed!")
-    else:
-        features_list = np.load(features_list_path, allow_pickle=True)
-        image_paths = np.load(image_paths_path, allow_pickle=True)
 
     # Find top 5 similar images
     st.info("Finding similar images...")
