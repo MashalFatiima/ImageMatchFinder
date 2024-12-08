@@ -58,7 +58,7 @@ def main():
             .main { background-color: #f0f0f5; }
             .header { text-align: center; margin-bottom: 20px; }
             .logo { width: 80px; height: 80px; margin-right: 20px; }
-            .footer { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #FF69B4; font-weight: bold; background-color: #3498db; padding: 10px; width: 100%; text-align: center; }
+            .footer { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #FF69B4; font-weight: bold; background-color: #242426; padding: 10px; width: 100%; text-align: center; }
             .uploaded-image { width: 200px; height: auto; margin-bottom: 10px; }
         </style>
     """, unsafe_allow_html=True)
