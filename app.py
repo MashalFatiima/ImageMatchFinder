@@ -10,24 +10,20 @@ from tensorflow.keras.models import Model
 from PIL import Image
 import streamlit as st
 
-# Load pre-trained VGG16 model (without the top layer)
 vgg16_model = VGG16(weights='imagenet', include_top=False)
 model = Model(inputs=vgg16_model.input, outputs=vgg16_model.output)
 
-# Function to prepare an image
 def prepare_image(image_path, target_size=(224, 224)):
     image = load_img(image_path, target_size=target_size)
     image_array = img_to_array(image)
     image_array = np.expand_dims(image_array, axis=0)
     return preprocess_input(image_array)
 
-# Function to extract features using VGG16
 def extract_features(image_path):
     preprocessed_image = prepare_image(image_path)
     features = model.predict(preprocessed_image)
     return features.flatten()
 
-# Function to extract features from all images in a folder
 def extract_features_from_folder(folder_path):
     feature_list = []
     image_names = []
@@ -40,52 +36,39 @@ def extract_features_from_folder(folder_path):
             image_names.append(image_name)
     
     return feature_list, image_names
-
-# Function to find the top 5 similar images
+    
 def find_top_similar_images(query_image, feature_list, image_names, folder_path, top_n=5):
     query_features = extract_features(query_image)
     similarities = []
+    similar_images = []
     
     for i, features in enumerate(feature_list):
         similarity = cosine_similarity([query_features], [features])[0][0]
         similarities.append((image_names[i], similarity))
-    
-    # Sort by similarity score in descending order
     similarities = sorted(similarities, key=lambda x: x[1], reverse=True)
     
-    # Get the paths of the top similar images
-    similar_images = []
     for image_name, _ in similarities[:top_n]:
         similar_images.append(os.path.join(folder_path, image_name))
-    
     return similar_images
 
-# Streamlit app
 def main():
     st.set_page_config(page_title="Image Match Finder", layout="wide")
-
-    # Custom CSS for the layout
     st.markdown("""
         <style>
             .main { background-color: #f0f0f5; }
             .header { text-align: center; margin-bottom: 20px; }
             .logo { width: 80px; height: 80px; margin-right: 20px; }
-            .developer-info { font-size: 14px; color: #FFC0CB; font-weight: bold; margin-top: 10px; }
+            .footer { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 14px; color: #FF69B4; font-weight: bold; }
             .uploaded-image { width: 200px; height: auto; margin-bottom: 10px; }
         </style>
     """, unsafe_allow_html=True)
 
-    # Add the logo
     col1, col2 = st.columns([1, 6])
     with col1:
-        st.image("Logo.webp", width=80)  # Ensure the logo file is in the working directory
+        st.image("Logo.webp", width=80)  
     with col2:
         st.title("Image Match Finder")
     
-    # Developer Info
-    st.markdown('<p class="developer-info">Developed by Mashal Fatima</p>', unsafe_allow_html=True)
-
-    # Step 1: Read the pre-uploaded CSV file
     st.subheader("Step 1: Reading Pre-uploaded CSV File")
     csv_path = "DataSheet.csv"
     if not os.path.exists(csv_path):
@@ -95,12 +78,11 @@ def main():
     df = pd.read_csv(csv_path)
     st.write("CSV file loaded successfully!")
     
-    # Step 2: Download images from the links and save in a folder
     st.subheader("Step 2: Downloading Images from Links")
     output_dir = "downloaded_images"
     os.makedirs(output_dir, exist_ok=True)
     
-    if len(os.listdir(output_dir)) == 0:  # Only download if the folder is empty
+    if len(os.listdir(output_dir)) == 0:  
         st.write("Downloading images...")
         for _, row in df.iterrows():
             image_url = row['Image Link']
@@ -113,7 +95,6 @@ def main():
     else:
         st.info("Images already downloaded.")
 
-    # Step 3: Extract features for downloaded images (only once)
     st.subheader("Step 3: Extracting Features")
     if 'feature_list' not in st.session_state:
         st.write("Extracting features from images...")
@@ -124,30 +105,27 @@ def main():
     else:
         st.write("Features are already extracted.")
 
-    # Step 4: Upload query image to find similar images
     st.subheader("Step 4: Upload Query Image")
     uploaded_query_image = st.file_uploader("Upload an image to find similar images", type=["png", "jpg", "jpeg"])
 
     if uploaded_query_image is not None:
-        # Save the uploaded file to a temporary location
         query_image_path = os.path.join("temp_query_image.jpg")
         with open(query_image_path, "wb") as f:
             f.write(uploaded_query_image.getbuffer())
         
-        # Display the uploaded image with adjusted size
         st.image(Image.open(query_image_path), caption="Uploaded Image", width=200)
 
-        # Find top 5 similar images
         st.write("Finding similar images...")
         top_similar_images = find_top_similar_images(query_image_path, st.session_state.feature_list, st.session_state.image_names, output_dir)
 
-        # Display the results with 2-column layout
         st.write("Top 5 Similar Images:")
         col1, col2 = st.columns(2)
 
         for i, image_path in enumerate(top_similar_images):
             col = col1 if i % 2 == 0 else col2
             col.image(image_path, use_column_width=True, width=150)
+
+    st.markdown('<div class="footer">Developed by Mashal Fatima</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
