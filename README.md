@@ -1,6 +1,6 @@
 # Image Match Finder
 
-Image Match Finder is a web application developed by **Mashal Fatima** using **Streamlit**. The app allows users to upload an image and find the top 5 most similar images from a pre-uploaded dataset using feature extraction and cosine similarity. The feature extraction is done using the **VGG16** model, a deep learning model for image recognition.
+Image Match Finder is a web application developed using **Streamlit**. The app allows users to upload an image and find the top 5 most similar images from a pre-uploaded dataset using feature extraction and cosine similarity. The feature extraction is done using the **VGG16** model, a deep learning model for image recognition.
 
 ## Features:
 - Upload an image to find similar images in a pre-defined dataset.
