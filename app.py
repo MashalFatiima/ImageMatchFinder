@@ -69,7 +69,7 @@ def main():
     with col2:
         st.title("Image Match Finder")
     
-    st.subheader("Step 1: Reading Pre-uploaded CSV File")
+    st.subheader("Step 1: Reading Pre-uploaded CSV File & Downloading Images from Links ")
     csv_path = "DataSheet.csv"
     if not os.path.exists(csv_path):
         st.error("CSV file not found!")
@@ -78,7 +78,6 @@ def main():
     df = pd.read_csv(csv_path)
     st.write("CSV file loaded successfully!")
     
-    st.subheader("Step 2: Downloading Images from Links")
     output_dir = "downloaded_images"
     os.makedirs(output_dir, exist_ok=True)
     
@@ -95,7 +94,7 @@ def main():
     else:
         st.info("Images already downloaded.")
 
-    st.subheader("Step 3: Extracting Features")
+    st.subheader("Step 2: Extracting Features From Images")
     if 'feature_list' not in st.session_state:
         st.write("Extracting features from images...")
         feature_list, image_names = extract_features_from_folder(output_dir)
@@ -105,7 +104,7 @@ def main():
     else:
         st.write("Features are already extracted.")
 
-    st.subheader("Step 4: Upload Query Image")
+    st.subheader("Step 3: Upload Query Image")
     uploaded_query_image = st.file_uploader("Upload an image to find similar images", type=["png", "jpg", "jpeg"])
 
     if uploaded_query_image is not None:
